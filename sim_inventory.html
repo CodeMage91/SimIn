@@ -1,0 +1,63 @@
+<html>
+    <head>
+        <title>SIM Inventory</title>
+    </head>
+    <body>
+        <div id="user_name_display"></div>
+        <div id="logout" style="background-color: black; color: white; width: 64px; cursor: pointer; text-align: center;">Logout</div>
+        <div style="width: 1200px; height: 48px; border: 1px solid black; display: flex; flex-direction: row; justify-content: space-evenly; align-items: center;">
+            <div id="events_filter" style="background-color: #222; color: white; padding: 4px; border-radius: 7px; cursor: pointer;" title="View Manikins">Events</div>
+            <div id="manikin_filter" style="background-color: #222; color: white; padding: 4px; border-radius: 7px; cursor: pointer;" title="View Manikins">Request</div>
+            <div id="body_filter" style="background-color: #222; color: white; padding: 4px; border-radius: 7px; cursor: pointer;" title="Task Trainers">Task Trainers</div>
+            <div id="simpad_filter" style="background-color: #222; color: white; padding: 4px; border-radius: 7px; cursor: pointer;" title="View Simpads">SimPads</div>
+            <div id="medical_supplies_filter" style="background-color: #222; color: white; padding: 4px; border-radius: 7px; cursor: pointer;" title="View Med Supplies">Medical Supplies</div>
+            <div id="sim_group_filter" style="background-color: #222; color: white; padding: 4px; border-radius: 7px; cursor: pointer;" title="View Active Groups">Sim Groups</div>
+        </div>
+        <div style="display: flex; flex-direction: row;  width: 1200px; height: 48px; justify-content: flex-end; align-items: center;">
+            <form  id="search_form" style="display: flex; flex-direction: row;">
+                <input id="search_bar" type="text" style="width: 240px; height: 24px; padding-left: 12px; border-radius: 12px;" placeholder="search">
+                <div id="start_search" type="button" style=" background-color: #222; color: white; width: 24px; height: 24px; border-radius: 12px; text-align: center; align-items: center; display: flex; flex-direction: column; justify-content: center; cursor: pointer; margin-left: 4px;">Go</div>
+            </form>
+        </div>
+        <div id="calendar_controls" style="width: 1200px; height: 48px; border: 1px solid black; border-bottom: none; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 0 12px; background-color: #f5f5f5;">
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 8px;">
+                <div id="prev_btn" style="background-color: #222; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 18px;" title="Previous">&larr;</div>
+                <div id="next_btn" style="background-color: #222; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 18px;" title="Next">&rarr;</div>
+                <div id="today_btn" style="background-color: #222; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;" title="Go to Today">Today</div>
+            </div>
+            <div id="calendar_header" style="font-size: 20px; font-weight: bold;">June 2026</div>
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 8px;">
+                <div id="week_view_btn" style="background-color: #222; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;" title="Week View">Week</div>
+                <div id="month_view_btn" style="background-color: #555; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;" title="Month View">Month</div>
+            </div>
+        </div>
+        <div id="event_calendar" style="width: 1200px; height: 820px; border: 1px solid black; display: flex; flex-direction: column;  overflow-y: scroll;"></div>
+        <div id="event_details" style="width: 1200px; height: 820px; border: 1px solid black; display: none; flex-direction: column;  overflow-y: scroll;"></div>
+        <div id="results" style="width: 1200px; height: 820px; border: 1px solid black; display: none; flex-direction: column;  overflow-y: scroll;"></div>
+        <div id="group_results" style="width: 1200px; height: 820px; border: 1px solid black; display: none; flex-direction: column;  overflow-y: scroll;"></div>
+        <div id="request_cart_box" style="width: 420px; height: 520px; border: 1px solid black; position: absolute; top: 120px; left: 1240px; display: none; flex-direction: column;">
+            <div style="text-align: center; margin-top: 6px;">Current Request</div>
+            <div id="request_display" style="width: 96%; height: 440px; border: 1px solid black; margin-left: 4px; overflow-y: scroll; display: flex; flex-direction: column;"></div>
+            <div id="to_request_details" type="button" style="width: 50%; background-color: black; color: white; padding: 4px; margin: auto; text-align: center; cursor: pointer; border-radius: 7px; display: flex; flex-direction: column;" title="To Request Details">Next</div>
+            <div id="request_details" style="width: 96%; height: 480px; border: 1px solid transparent;margin-left: 4px; display: none; flex-direction: column;">
+                <div>What day(s) will you need the equipment?</div>
+                <label>From</label>
+                <input id="start_date" type="date"><br>
+                <input id="start_time" type="time">
+                <label>To</label>
+                <input id="end_date" type="date"><br>
+                <input id="end_time" type="time"><br>
+                <div>Location of Event?</div>
+                <input id="sim_location" type="text"><br>
+                <div>Comments or Notes?</div>
+                <textarea id="request_comments" style="height: 120px;"></textarea>
+                <div id="back_to_request_cart" type="button" style="width: 50%; background-color: black; color: white; padding: 4px; margin: auto; text-align: center; cursor: pointer; border-radius: 7px; display: flex; flex-direction: column;" title="Back to Request Cart">Back</div>
+                <div id="submit_request" type="button" style="width: 50%; background-color: black; color: white; padding: 4px; margin: auto; text-align: center; cursor: pointer; border-radius: 7px; display: flex; flex-direction: column;" >Submit Request</div>
+            </div>
+        </div>
+    </body>
+    <script src="./users.js"></script>
+    <script src="./database.js"></script>
+    <script src="./events.js"></script>
+    <script type="module" src="./sim_inventory.js"></script>
+</html>
