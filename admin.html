@@ -1,0 +1,45 @@
+<html>
+<head>
+    <title>SIM Admin Dashboard</title>
+</head>
+<body>
+    <h1>SIM Inventory Admin</h1>
+    <div id="logout" style="background-color: black; color: white; width: 64px; cursor: pointer; text-align: center;">Logout</div>
+    <div id="admin_nav" style="width:1200px;height:32px;border:1px solid black;padding:12px; display: flex; flex-direction: row; align-items: center; justify-content: space-evenly;">
+        <div id="show_request" style="padding: 4px; color: white; background-color: black; font-size: 24px; border-radius: 7px; cursor: pointer;" title="See Request">Request</div>
+        <div id="show_calendar" style="padding: 4px; color: white; background-color: black; font-size: 24px; border-radius: 7px; cursor: pointer;" title="Check Calendar">Calendar</div>
+        <div id="show_sims" style="padding: 4px; color: white; background-color: black; font-size: 24px; border-radius: 7px; cursor: pointer;" title="Check Calendar">Sims</div>
+        <div id="show_groups" style="padding: 4px; color: white; background-color: black; font-size: 24px; border-radius: 7px; cursor: pointer;" title="Check Calendar">Groups</div>
+       <div style="position: relative; display: inline-block;">
+        <div id="show_messages" style="padding: 4px; color: white; background-color: black; font-size: 24px; border-radius: 7px; cursor: pointer;" title="Check Messages">Messages</div>
+        <div id="message_notification_icon" style="width: 24px; height: 24px; background-color: red; position: absolute; top: -10px; right: -10px; border-radius: 50%; color: white; display: none; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; pointer-events: none;">
+            0
+        </div>
+    </div>
+    </div>
+    <div id="admin_name"></div>
+    <div id="request_window" style="width:1200px;min-height:600px;border:1px solid black;padding:12px; flex-direction: column; display: none;">
+        <div id="request_filter" style="width: 240px; height: 16px; display: flex; flex-direction: row; align-items: center; justify-content: space-evenly;">
+            <div id="all_filter" style="background-color: black; color: white; padding: 3px; border-radius: 4px; cursor:pointer;" title="Only See Pending Request">All</div>
+            <div id="pending_filter" style="background-color: black; color: white; padding: 3px; border-radius: 4px; cursor:pointer;" title="Only See Pending Request">Pending</div>
+            <div id="approved_filter" style="background-color: black; color: white; padding: 3px; border-radius: 4px; cursor:pointer;" title="Only See Approved Request">Approved</div>
+            <div id="denied_filter" style="background-color: black; color: white; padding: 3px; border-radius: 4px; cursor:pointer;" title="Only See Denied Request">Denied</div>
+        </div>
+        <div id="request_list" style=" margin-top: 8px;"></div>
+
+    </div>
+    <div id="calendar_window" style="width:1200px;min-height:600px;border:1px solid black;padding:12px; flex-direction: column; display: none;"></div>
+    <div id="sim_window" style="width:1200px;min-height:600px;border:1px solid black;padding:12px; flex-direction: column; display: flex;">
+        <div id="sim_card" style="width: 240px; height: 240px; border: 1px solid black; justify-content: center; align-items: center; display: flex; flex-direction: column;">
+            <p id="sim_name" style="text-align: center;">Sound Sim</p>
+            <div sim_icon style="font-size: 96px; color: black; text-align: center;">&#127911;</div>
+            <div id="create_sim" style="background-color: black; color: white; font-size: 28px; padding: 3px; width: 70%; text-align: center; border-radius: 7px; cursor: pointer; ">Create Group</div>
+        </div>
+    </div>
+    <div id="group_window" style="width:1200px;min-height:600px;border:1px solid black;padding:12px; flex-direction: column; display: none;"></div>
+    <div id="timeline_window" style="width:1200px;min-height:600px;border:1px solid black;padding:12px; flex-direction: column; display: none;"></div>
+    <div id="inventory_page" style="width:1200px;min-height:600px;border:1px solid black;padding:12px; flex-direction: column; display: none;"></div>
+</body>
+
+<script type="module" src="./admin.js"></script>
+</html>
