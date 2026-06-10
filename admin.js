@@ -8,6 +8,8 @@ import {
     orderBy,
     updateDoc,
     deleteDoc,
+    addDoc,
+    serverTimestamp,
     doc
 } from "./firebase_config.js";
 
@@ -51,6 +53,22 @@ let sim_window = document.getElementById("sim_window");
 let group_window = document.getElementById("group_window");
 let show_sims = document.getElementById("show_sims");
 let show_groups = document.getElementById("show_groups");
+
+// Events management elements
+let events_window = document.getElementById("events_window");
+let show_events = document.getElementById("show_events");
+let event_form_title = document.getElementById("event_form_title");
+let edit_event_id = document.getElementById("edit_event_id");
+let event_title_input = document.getElementById("event_title_input");
+let event_date_input = document.getElementById("event_date_input");
+let event_start_time = document.getElementById("event_start_time");
+let event_end_time = document.getElementById("event_end_time");
+let event_location_input = document.getElementById("event_location_input");
+let event_description_input = document.getElementById("event_description_input");
+let event_assign_users = document.getElementById("event_assign_users");
+let save_event_btn = document.getElementById("save_event_btn");
+let cancel_event_btn = document.getElementById("cancel_event_btn");
+let events_list_content = document.getElementById("events_list_content");
 
 let create_sim = document.getElementById("create_sim");
 
@@ -391,6 +409,12 @@ show_groups.onclick = () => {
     renderAdminGroups();
 };
 
+show_events.onclick = () => {
+    hideAdminWindows();
+    events_window.style.display = "flex";
+    renderEventsList();
+};
+
 function windowShowHide(clicked_el,win_hide,win_show){
 
     clicked_el.onclick = ()=>{
@@ -680,6 +704,7 @@ function hideAdminWindows() {
     timeline_window.style.display = "none";
     sim_window.style.display = "none";
     group_window.style.display = "none";
+    if (events_window) events_window.style.display = "none";
 }
 
 async function renderAdminGroups() {
@@ -898,4 +923,202 @@ function showDeleteGroupConfirm(groupId, card) {
     confirmBox.appendChild(noBtn);
 
     card.appendChild(confirmBox);
+}
+
+// ==================== EVENT MANAGEMENT ====================
+
+async function renderEventsList() {
+    if (!events_list_content) return;
+
+    events_list_content.innerHTML = "<p>Loading events...</p>";
+
+    try {
+        let snapshot = await getDocs(
+            query(collection(db, "user_events"), orderBy("date"))
+        );
+
+        if (snapshot.empty) {
+            events_list_content.innerHTML = "<p>No events created yet.</p>";
+            return;
+        }
+
+        events_list_content.innerHTML = "";
+
+        snapshot.forEach(eventDoc => {
+            let event = eventDoc.data();
+            let eventId = eventDoc.id;
+
+            let card = document.createElement("div");
+
+            Object.assign(card.style, {
+                border: "1px solid #ccc",
+                borderRadius: "7px",
+                padding: "12px",
+                marginBottom: "8px",
+                backgroundColor: "#f9f9f9"
+            });
+
+            let assignedTo = "All users";
+            if (event.assigned_users && event.assigned_users.length > 0) {
+                assignedTo = `Users: ${event.assigned_users.join(", ")}`;
+            }
+
+            card.innerHTML = `
+                <strong style="font-size: 16px;">${event.title}</strong><br>
+                <span style="color: #666;">${event.date} | ${event.start_time || "N/A"} - ${event.end_time || "N/A"}</span><br>
+                <span style="color: #666;">Location: ${event.location || "N/A"}</span><br>
+                <span style="font-size: 12px; color: #888;">Assigned: ${assignedTo}</span>
+            `;
+
+            let btnContainer = document.createElement("div");
+            btnContainer.style.marginTop = "8px";
+
+            let editBtn = document.createElement("button");
+            editBtn.innerHTML = "Edit";
+            editBtn.style.cursor = "pointer";
+            editBtn.addEventListener("click", () => {
+                editEvent(eventId, event);
+            });
+
+            let deleteBtn = document.createElement("button");
+            deleteBtn.innerHTML = "Delete";
+            deleteBtn.style.marginLeft = "8px";
+            deleteBtn.style.backgroundColor = "crimson";
+            deleteBtn.style.color = "white";
+            deleteBtn.style.cursor = "pointer";
+            deleteBtn.addEventListener("click", () => {
+                deleteEvent(eventId);
+            });
+
+            btnContainer.appendChild(editBtn);
+            btnContainer.appendChild(deleteBtn);
+            card.appendChild(btnContainer);
+
+            events_list_content.appendChild(card);
+        });
+    } catch (error) {
+        console.error("Error loading events:", error);
+        events_list_content.innerHTML = "<p>Error loading events.</p>";
+    }
+}
+
+function editEvent(eventId, event) {
+    if (event_form_title) event_form_title.innerHTML = "Edit Event";
+    if (edit_event_id) edit_event_id.value = eventId;
+    if (event_title_input) event_title_input.value = event.title || "";
+    if (event_date_input) event_date_input.value = event.date || "";
+    if (event_start_time) event_start_time.value = event.start_time || "";
+    if (event_end_time) event_end_time.value = event.end_time || "";
+    if (event_location_input) event_location_input.value = event.location || "";
+    if (event_description_input) event_description_input.value = event.description || "";
+
+    if (event_assign_users) {
+        if (event.assigned_to_all) {
+            event_assign_users.value = "all";
+        } else if (event.assigned_users && event.assigned_users.length > 0) {
+            event_assign_users.value = event.assigned_users.join(", ");
+        } else {
+            event_assign_users.value = "";
+        }
+    }
+
+    if (cancel_event_btn) cancel_event_btn.style.display = "block";
+}
+
+function clearEventForm() {
+    if (event_form_title) event_form_title.innerHTML = "Create New Event";
+    if (edit_event_id) edit_event_id.value = "";
+    if (event_title_input) event_title_input.value = "";
+    if (event_date_input) event_date_input.value = "";
+    if (event_start_time) event_start_time.value = "";
+    if (event_end_time) event_end_time.value = "";
+    if (event_location_input) event_location_input.value = "";
+    if (event_description_input) event_description_input.value = "";
+    if (event_assign_users) event_assign_users.value = "";
+    if (cancel_event_btn) cancel_event_btn.style.display = "none";
+}
+
+async function saveEvent() {
+    let title = event_title_input ? event_title_input.value.trim() : "";
+    let date = event_date_input ? event_date_input.value : "";
+    let startTime = event_start_time ? event_start_time.value : "";
+    let endTime = event_end_time ? event_end_time.value : "";
+    let location = event_location_input ? event_location_input.value.trim() : "";
+    let description = event_description_input ? event_description_input.value.trim() : "";
+    let assignInput = event_assign_users ? event_assign_users.value.trim() : "";
+    let editId = edit_event_id ? edit_event_id.value : "";
+
+    if (!title) {
+        alert("Please enter an event title.");
+        return;
+    }
+
+    if (!date) {
+        alert("Please select a date.");
+        return;
+    }
+
+    let assignedToAll = false;
+    let assignedUsers = [];
+
+    if (assignInput.toLowerCase() === "all") {
+        assignedToAll = true;
+    } else if (assignInput) {
+        assignedUsers = assignInput.split(",").map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+    }
+
+    let eventData = {
+        title: title,
+        date: date,
+        start_time: startTime,
+        end_time: endTime,
+        location: location,
+        description: description,
+        assigned_to_all: assignedToAll,
+        assigned_users: assignedUsers,
+        created_by: current_user.userName,
+        updated_at: serverTimestamp()
+    };
+
+    try {
+        if (editId) {
+            // Update existing event
+            await updateDoc(doc(db, "user_events", editId), eventData);
+            alert("Event updated!");
+        } else {
+            // Create new event
+            eventData.created_at = serverTimestamp();
+            await addDoc(collection(db, "user_events"), eventData);
+            alert("Event created!");
+        }
+
+        clearEventForm();
+        renderEventsList();
+    } catch (error) {
+        console.error("Error saving event:", error);
+        alert("Error saving event. Please try again.");
+    }
+}
+
+async function deleteEvent(eventId) {
+    if (!confirm("Are you sure you want to delete this event?")) {
+        return;
+    }
+
+    try {
+        await deleteDoc(doc(db, "user_events", eventId));
+        renderEventsList();
+    } catch (error) {
+        console.error("Error deleting event:", error);
+        alert("Error deleting event.");
+    }
+}
+
+// Event form listeners
+if (save_event_btn) {
+    save_event_btn.addEventListener("click", saveEvent);
+}
+
+if (cancel_event_btn) {
+    cancel_event_btn.addEventListener("click", clearEventForm);
 }
