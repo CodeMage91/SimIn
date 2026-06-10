@@ -6,8 +6,15 @@ import {
     getDocs,
     updateDoc,
     doc,
-    serverTimestamp
-} from "./firebase_config.js"; 
+    serverTimestamp,
+    query,
+    orderBy
+} from "./firebase_config.js";
+
+// Calendar state
+let currentView = "week"; // "week" or "month"
+let currentDate = new Date();
+let userEvents = []; 
 
 console.log(db);
 
@@ -63,6 +70,15 @@ let events_filter = document.getElementById("events_filter");
 
 let event_details = document.getElementById("event_details");
 
+// Calendar controls
+let calendar_controls = document.getElementById("calendar_controls");
+let prev_btn = document.getElementById("prev_btn");
+let next_btn = document.getElementById("next_btn");
+let today_btn = document.getElementById("today_btn");
+let calendar_header = document.getElementById("calendar_header");
+let week_view_btn = document.getElementById("week_view_btn");
+let month_view_btn = document.getElementById("month_view_btn");
+
 let request_cart = [];
 
 results.style.display = "none";
@@ -71,7 +87,7 @@ group_results.style.display = "none";
 event_calendar.style.display = "flex";
 
 if (results) {
-    renderResults(sim_inventory);
+    renderResults(window.sim_inventory || []);
 }
 
 function renderResults(list) {
@@ -315,8 +331,9 @@ if (submit_request) {
 
 function searchInventory(query) {
     query = query.toLowerCase();
+    let inventory = window.sim_inventory || [];
 
-    let filtered = sim_inventory.filter(item =>
+    let filtered = inventory.filter(item =>
         item.productName.toLowerCase().includes(query) ||
         item.serialNumber.toLowerCase().includes(query) ||
         item.productLine.toLowerCase().includes(query) ||
@@ -484,7 +501,7 @@ async function joinGroup(groupId, group, typedPassword) {
     let alreadyJoined = members.some(member =>
         member.userName === current_user.userName
     );
-
+    
     if (alreadyJoined) {
         alert("You are already in this group.");
         return;
@@ -510,111 +527,454 @@ async function joinGroup(groupId, group, typedPassword) {
     window.location.href = "sound_sim.html";
 }
 
-function renderEvents(eventsList) {
+// Fetch user events from Firebase and merge with hard-coded events
+async function fetchUserEvents() {
+    userEvents = [];
+
+    // Add hard-coded events from sim_events (events.js) - access via window for ES modules
+    let hardcodedEvents = window.sim_events || [];
+
+    if (Array.isArray(hardcodedEvents) && hardcodedEvents.length > 0) {
+        hardcodedEvents.forEach(event => {
+            userEvents.push({
+                id: `hardcoded_${event.id}`,
+                title: event.title,
+                date: event.date,
+                start_time: event.start_time,
+                end_time: event.end_time,
+                location: event.location,
+                description: event.description,
+                lead: event.lead,
+                category: event.category,
+                notes: event.notes,
+                source: "hardcoded"
+            });
+        });
+    }
+
+    // Also fetch from Firebase
+    try {
+        let snapshot = await getDocs(
+            query(collection(db, "user_events"), orderBy("date"))
+        );
+
+        snapshot.forEach(docSnap => {
+            let event = docSnap.data();
+            event.id = docSnap.id;
+            event.source = "firebase";
+
+            // Check if event is assigned to current user or their groups
+            let isAssigned = false;
+
+            if (event.assigned_users && event.assigned_users.includes(current_user.id)) {
+                isAssigned = true;
+            }
+
+            if (event.assigned_to_all) {
+                isAssigned = true;
+            }
+
+            if (isAssigned) {
+                userEvents.push(event);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching Firebase events:", error);
+    }
+
+    return userEvents;
+}
+
+// Get week start date (Sunday)
+function getWeekStart(date) {
+    let d = new Date(date);
+    let day = d.getDay();
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+// Format date as YYYY-MM-DD
+function formatDate(date) {
+    let year = date.getFullYear();
+    let month = String(date.getMonth() + 1).padStart(2, '0');
+    let day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Get month name
+function getMonthName(monthIndex) {
+    const months = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    return months[monthIndex];
+}
+
+// Get day name
+function getDayName(dayIndex) {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return days[dayIndex];
+}
+
+// Update calendar header
+function updateCalendarHeader() {
+    if (!calendar_header) return;
+
+    if (currentView === "week") {
+        let weekStart = getWeekStart(currentDate);
+        let weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        let startMonth = getMonthName(weekStart.getMonth());
+        let endMonth = getMonthName(weekEnd.getMonth());
+
+        if (startMonth === endMonth) {
+            calendar_header.innerHTML = `${startMonth} ${weekStart.getDate()} - ${weekEnd.getDate()}, ${weekStart.getFullYear()}`;
+        } else {
+            calendar_header.innerHTML = `${startMonth} ${weekStart.getDate()} - ${endMonth} ${weekEnd.getDate()}, ${weekEnd.getFullYear()}`;
+        }
+    } else {
+        calendar_header.innerHTML = `${getMonthName(currentDate.getMonth())} ${currentDate.getFullYear()}`;
+    }
+}
+
+// Render week view
+function renderWeekView() {
     if (!event_calendar) return;
 
     event_calendar.innerHTML = "";
+    updateCalendarHeader();
 
-    let activeEvent = event_title.find(event => event.active === true);
+    // Update button styles
+    if (week_view_btn) week_view_btn.style.backgroundColor = "#222";
+    if (month_view_btn) month_view_btn.style.backgroundColor = "#555";
 
-    if (!activeEvent) {
-        event_calendar.innerHTML = "<h2>No active event selected.</h2>";
-        return;
-    }
+    let weekStart = getWeekStart(currentDate);
 
-    let activeEventActivities = eventsList.filter(activity => {
-        return activity.event_id === activeEvent.id;
+    // Create day headers
+    let headerRow = document.createElement("div");
+    Object.assign(headerRow.style, {
+        display: "grid",
+        gridTemplateColumns: "repeat(7, 1fr)",
+        borderBottom: "2px solid #222",
+        backgroundColor: "#222",
+        color: "white"
     });
 
-    let hero = document.createElement("div");
+    for (let i = 0; i < 7; i++) {
+        let dayDate = new Date(weekStart);
+        dayDate.setDate(dayDate.getDate() + i);
 
-    Object.assign(hero.style, {
-        width: "100%",
-        minHeight: "240px",
-        backgroundImage: activeEvent.cover_image
-            ? `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url('./images/${activeEvent.cover_image}')`
-            : "linear-gradient(135deg, #222, #666)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        color: "white",
-        textAlign: "center",
-        borderBottom: "1px solid black"
-    });
+        let header = document.createElement("div");
+        Object.assign(header.style, {
+            padding: "12px",
+            textAlign: "center",
+            fontWeight: "bold"
+        });
 
-    hero.innerHTML = `
-        <h1 style="font-size:42px; margin:0;">${activeEvent.title}</h1>
-        <div style="font-size:18px; margin-top:8px;">Event Calendar</div>
-    `;
-
-    event_calendar.appendChild(hero);
-
-    let groupedByDate = {};
-
-    activeEventActivities.forEach(activity => {
-        if (!groupedByDate[activity.date]) {
-            groupedByDate[activity.date] = [];
+        let isToday = formatDate(dayDate) === formatDate(new Date());
+        if (isToday) {
+            header.style.backgroundColor = "#444";
         }
 
-        groupedByDate[activity.date].push(activity);
-    });
+        header.innerHTML = `${getDayName(i)}<br>${dayDate.getDate()}`;
+        headerRow.appendChild(header);
+    }
 
-    let calendarGrid = document.createElement("div");
+    event_calendar.appendChild(headerRow);
 
-    Object.assign(calendarGrid.style, {
+    // Create day columns
+    let bodyRow = document.createElement("div");
+    Object.assign(bodyRow.style, {
         display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: "12px",
-        padding: "12px"
+        gridTemplateColumns: "repeat(7, 1fr)",
+        flexGrow: "1",
+        minHeight: "700px"
     });
 
-    Object.keys(groupedByDate).forEach(date => {
-        let dayEvents = groupedByDate[date];
+    for (let i = 0; i < 7; i++) {
+        let dayDate = new Date(weekStart);
+        dayDate.setDate(dayDate.getDate() + i);
+        let dateStr = formatDate(dayDate);
+
+        let dayColumn = document.createElement("div");
+        Object.assign(dayColumn.style, {
+            borderRight: i < 6 ? "1px solid #ccc" : "none",
+            padding: "8px",
+            minHeight: "100%",
+            backgroundColor: formatDate(dayDate) === formatDate(new Date()) ? "#f0f8ff" : "white"
+        });
+
+        // Find events for this day
+        let dayEvents = userEvents.filter(e => e.date === dateStr);
 
         dayEvents.sort((a, b) => {
-            return a.sort_time.localeCompare(b.sort_time);
+            return (a.start_time || "00:00").localeCompare(b.start_time || "00:00");
         });
 
-        let dayCard = document.createElement("div");
+        dayEvents.forEach(event => {
+            let eventCard = document.createElement("div");
+            Object.assign(eventCard.style, {
+                backgroundColor: event.source === "hardcoded" ? "#34a853" : "#4285f4",
+                color: "white",
+                padding: "6px 8px",
+                marginBottom: "4px",
+                borderRadius: "4px",
+                fontSize: "12px",
+                cursor: "pointer"
+            });
 
-        Object.assign(dayCard.style, {
-            border: "1px solid black",
-            borderRadius: "7px",
-            padding: "10px",
-            minHeight: "180px",
-            cursor: "pointer",
-            backgroundColor: "#f7f7f7"
-        });
+            let leadText = event.lead ? `<br><span style="font-size:10px;">Lead: ${event.lead}</span>` : "";
 
-        let eventHTML = "";
-
-        dayEvents.forEach(activity => {
-            eventHTML += `
-                <div style="border-top:1px solid #ccc; padding-top:6px; margin-top:6px;">
-                    <strong>${activity.title}</strong><br>
-                    <span>${activity.start_time} - ${activity.end_time}</span><br>
-                    <span>Lead: ${activity.lead || "N/A"}</span>
-                </div>
+            eventCard.innerHTML = `
+                <strong>${event.title}</strong><br>
+                <span>${event.start_time || ""} - ${event.end_time || ""}</span>
+                ${leadText}
             `;
+
+            eventCard.addEventListener("click", () => {
+                showEventDetail(event);
+            });
+
+            dayColumn.appendChild(eventCard);
         });
 
-        dayCard.innerHTML = `
-            <h3>${dayEvents[0].day}</h3>
-            <strong>${date}</strong>
-            ${eventHTML}
-        `;
+        bodyRow.appendChild(dayColumn);
+    }
 
-        dayCard.addEventListener("click", () => {
-            renderEventDetails(date, dayEvents, activeEvent);
-        });
+    event_calendar.appendChild(bodyRow);
+}
 
-        calendarGrid.appendChild(dayCard);
+// Render month view
+function renderMonthView() {
+    if (!event_calendar) return;
+
+    event_calendar.innerHTML = "";
+    updateCalendarHeader();
+
+    // Update button styles
+    if (week_view_btn) week_view_btn.style.backgroundColor = "#555";
+    if (month_view_btn) month_view_btn.style.backgroundColor = "#222";
+
+    let year = currentDate.getFullYear();
+    let month = currentDate.getMonth();
+
+    let firstDay = new Date(year, month, 1);
+    let lastDay = new Date(year, month + 1, 0);
+    let startDay = firstDay.getDay();
+    let totalDays = lastDay.getDate();
+
+    // Create day headers
+    let headerRow = document.createElement("div");
+    Object.assign(headerRow.style, {
+        display: "grid",
+        gridTemplateColumns: "repeat(7, 1fr)",
+        borderBottom: "2px solid #222",
+        backgroundColor: "#222",
+        color: "white"
     });
 
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(day => {
+        let header = document.createElement("div");
+        Object.assign(header.style, {
+            padding: "12px",
+            textAlign: "center",
+            fontWeight: "bold"
+        });
+        header.innerHTML = day;
+        headerRow.appendChild(header);
+    });
+
+    event_calendar.appendChild(headerRow);
+
+    // Create calendar grid
+    let calendarGrid = document.createElement("div");
+    Object.assign(calendarGrid.style, {
+        display: "grid",
+        gridTemplateColumns: "repeat(7, 1fr)",
+        flexGrow: "1"
+    });
+
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startDay; i++) {
+        let emptyCell = document.createElement("div");
+        Object.assign(emptyCell.style, {
+            borderRight: "1px solid #eee",
+            borderBottom: "1px solid #eee",
+            backgroundColor: "#f9f9f9",
+            minHeight: "120px"
+        });
+        calendarGrid.appendChild(emptyCell);
+    }
+
+    // Add day cells
+    for (let day = 1; day <= totalDays; day++) {
+        let cellDate = new Date(year, month, day);
+        let dateStr = formatDate(cellDate);
+
+        let dayCell = document.createElement("div");
+        let isToday = formatDate(cellDate) === formatDate(new Date());
+
+        Object.assign(dayCell.style, {
+            borderRight: "1px solid #eee",
+            borderBottom: "1px solid #eee",
+            padding: "4px",
+            minHeight: "120px",
+            backgroundColor: isToday ? "#f0f8ff" : "white",
+            cursor: "pointer"
+        });
+
+        // Day number
+        let dayNum = document.createElement("div");
+        Object.assign(dayNum.style, {
+            fontWeight: isToday ? "bold" : "normal",
+            color: isToday ? "#4285f4" : "#333",
+            marginBottom: "4px"
+        });
+        dayNum.innerHTML = day;
+        dayCell.appendChild(dayNum);
+
+        // Find events for this day
+        let dayEvents = userEvents.filter(e => e.date === dateStr);
+
+        dayEvents.slice(0, 3).forEach(event => {
+            let eventPill = document.createElement("div");
+            Object.assign(eventPill.style, {
+                backgroundColor: event.source === "hardcoded" ? "#34a853" : "#4285f4",
+                color: "white",
+                padding: "2px 6px",
+                marginBottom: "2px",
+                borderRadius: "3px",
+                fontSize: "11px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+            });
+            eventPill.innerHTML = event.title;
+            eventPill.addEventListener("click", (e) => {
+                e.stopPropagation();
+                showEventDetail(event);
+            });
+            dayCell.appendChild(eventPill);
+        });
+
+        if (dayEvents.length > 3) {
+            let more = document.createElement("div");
+            more.style.fontSize = "11px";
+            more.style.color = "#666";
+            more.innerHTML = `+${dayEvents.length - 3} more`;
+            dayCell.appendChild(more);
+        }
+
+        // Click day to switch to week view for that day
+        dayCell.addEventListener("click", () => {
+            currentDate = cellDate;
+            currentView = "week";
+            renderWeekView();
+        });
+
+        calendarGrid.appendChild(dayCell);
+    }
+
     event_calendar.appendChild(calendarGrid);
+}
+
+// Show event detail popup
+function showEventDetail(event) {
+    event_calendar.style.display = "none";
+    if (calendar_controls) calendar_controls.style.display = "none";
+    event_details.style.display = "flex";
+
+    event_details.innerHTML = "";
+
+    let backBtn = document.createElement("div");
+    Object.assign(backBtn.style, {
+        backgroundColor: "black",
+        color: "white",
+        width: "120px",
+        padding: "6px",
+        margin: "12px",
+        textAlign: "center",
+        cursor: "pointer",
+        borderRadius: "7px"
+    });
+    backBtn.innerHTML = "Back";
+    backBtn.addEventListener("click", () => {
+        event_details.style.display = "none";
+        event_calendar.style.display = "flex";
+        if (calendar_controls) calendar_controls.style.display = "flex";
+    });
+    event_details.appendChild(backBtn);
+
+    let detail = document.createElement("div");
+    Object.assign(detail.style, {
+        padding: "20px",
+        maxWidth: "600px"
+    });
+
+    let leadHTML = event.lead ? `<p><strong>Lead:</strong> ${event.lead}</p>` : "";
+    let categoryHTML = event.category ? `<p><strong>Category:</strong> ${event.category}</p>` : "";
+    let notesHTML = event.notes ? `<p><strong>Notes:</strong> <em>${event.notes}</em></p>` : "";
+
+    detail.innerHTML = `
+        <h2 style="margin-top:0;">${event.title}</h2>
+        <p><strong>Date:</strong> ${event.date}</p>
+        <p><strong>Time:</strong> ${event.start_time || "N/A"} - ${event.end_time || "N/A"}</p>
+        <p><strong>Location:</strong> ${event.location || "N/A"}</p>
+        ${leadHTML}
+        ${categoryHTML}
+        <p><strong>Description:</strong> ${event.description || "No description"}</p>
+        ${notesHTML}
+    `;
+
+    event_details.appendChild(detail);
+}
+
+// Navigate to previous week/month
+function navigatePrev() {
+    if (currentView === "week") {
+        currentDate.setDate(currentDate.getDate() - 7);
+        renderWeekView();
+    } else {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderMonthView();
+    }
+}
+
+// Navigate to next week/month
+function navigateNext() {
+    if (currentView === "week") {
+        currentDate.setDate(currentDate.getDate() + 7);
+        renderWeekView();
+    } else {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderMonthView();
+    }
+}
+
+// Go to today
+function goToToday() {
+    currentDate = new Date();
+    if (currentView === "week") {
+        renderWeekView();
+    } else {
+        renderMonthView();
+    }
+}
+
+// Render calendar based on current view
+async function renderCalendar() {
+    await fetchUserEvents();
+
+    if (currentView === "week") {
+        renderWeekView();
+    } else {
+        renderMonthView();
+    }
+}
+
+// Legacy function for compatibility - no longer uses hard-coded events
+function renderEvents(eventsList) {
+    renderCalendar();
 }
 
 function renderEventDetails(date, dayEvents, activeEvent) {
@@ -689,21 +1049,50 @@ function renderEventDetails(date, dayEvents, activeEvent) {
 function showEventsView() {
     event_calendar.style.display = "flex";
     event_details.style.display = "none";
+    if (calendar_controls) calendar_controls.style.display = "flex";
 
     results.style.display = "none";
     group_results.style.display = "none";
     request_cart_box.style.display = "none";
 
-    renderEvents(sim_events);
+    renderCalendar();
 }
 
 if (events_filter) {
     events_filter.addEventListener("click", showEventsView);
 }
 
+// Calendar control event listeners
+if (prev_btn) {
+    prev_btn.addEventListener("click", navigatePrev);
+}
+
+if (next_btn) {
+    next_btn.addEventListener("click", navigateNext);
+}
+
+if (today_btn) {
+    today_btn.addEventListener("click", goToToday);
+}
+
+if (week_view_btn) {
+    week_view_btn.addEventListener("click", () => {
+        currentView = "week";
+        renderWeekView();
+    });
+}
+
+if (month_view_btn) {
+    month_view_btn.addEventListener("click", () => {
+        currentView = "month";
+        renderMonthView();
+    });
+}
+
 function showInventoryView() {
     event_calendar.style.display = "none";
     event_details.style.display = "none";
+    if (calendar_controls) calendar_controls.style.display = "none";
 
     results.style.display = "flex";
     request_cart_box.style.display = "flex";
@@ -714,6 +1103,7 @@ if (sim_group_filter) {
     sim_group_filter.addEventListener("click", () => {
 
         event_calendar.style.display = "none";
+        if (calendar_controls) calendar_controls.style.display = "none";
 
         results.style.display = "none";
         request_cart_box.style.display = "none";
@@ -725,5 +1115,5 @@ if (sim_group_filter) {
 }
 
 if(event_calendar){
-    renderEvents(sim_events);
+    renderCalendar();
 }
