@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SIM Camera Client</title>
+</head>
+<body style="background:black; color:white; font-family:Arial; text-align:center;">
+
+    <h1>SIM Camera Client</h1>
+
+    <video id="local_video" autoplay playsinline muted
+        style="width:90%; max-width:700px; border:4px solid lime; border-radius:12px;">
+    </video>
+
+    <br><br>
+
+    <button id="start_camera">Start Camera</button>
+
+    <script>
+        const local_video = document.getElementById("local_video");
+        const start_camera = document.getElementById("start_camera");
+
+start_camera.addEventListener("click", async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+
+        local_video.srcObject = stream;
+
+    } catch (error) {
+        console.error("Camera error name:", error.name);
+        console.error("Camera error message:", error.message);
+        alert(`${error.name}: ${error.message}`);
+    }
+});
+    </script>
+
+</body>
+</html>

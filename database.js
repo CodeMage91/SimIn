@@ -688,7 +688,7 @@ let sim_inventory = [
     purchaseDate: "",
     installDate: "",
     assetWarrantyExpirationDate: "",
-    quantity: 1,
+    quantity: 5,
     assetOwnership: "Customer Owned",
     location: "Skills Lab",
     image: "inven_47.jpg"
@@ -1159,7 +1159,7 @@ let sim_inventory = [
   "productLine": "Geri",
   "productName": "Geri TM Nasco Geriatric Manikin",
   "serialNumber": "LF4030-604",
-  "assetName": "LF4030-604-Geri Geriatric Manikin",
+  "assetName": "Geri Geriatric Manikin",
   "accountName": "Saint Joseph’s University",
   "purchaseDate": "",
   "installDate": "",
@@ -1168,5 +1168,52 @@ let sim_inventory = [
   "assetOwnership": "Customer Owned",
   "location": "Simulation Lab",
   "image": "inven_78.jpg"
+},
+  {
+  "id": 79,
+  "productLine": "Geri",
+  "productName": "Geri TM Nasco Geriatric Manikin",
+  "serialNumber": "LF4030-554",
+  "assetName": "Geri Geriatric Manikin",
+  "accountName": "Saint Joseph’s University",
+  "purchaseDate": "",
+  "installDate": "",
+  "assetWarrantyExpirationDate": "",
+  "quantity": 1,
+  "assetOwnership": "Customer Owned",
+  "location": "Simulation Lab",
+  "image": "inven_79.jpg"
+},
+  {
+  "id": 80,
+  "productLine": "Geri",
+  "productName": "Geri TM Nasco Geriatric Manikin (one leg)",
+  "serialNumber": "none",
+  "assetName": "Geri Geriatric Manikin",
+  "accountName": "Saint Joseph’s University",
+  "purchaseDate": "",
+  "installDate": "",
+  "assetWarrantyExpirationDate": "",
+  "quantity": 1,
+  "assetOwnership": "Customer Owned",
+  "location": "Simulation Lab",
+  "image": "inven_80.jpg"
+},
+{
+  "id": 81,
+  "productLine": "Gaumard",
+  "productName": "Susie and Simon Newborn Advanced Care Simulator - Light Skin",
+  "serialNumber": "N/A",
+  "assetName": "Susie and Simon Newborn Advanced Care Simulator - Light Skin",
+  "accountName": "Saint Joseph's University",
+  "purchaseDate": "N/A",
+  "installDate": "N/A",
+  "assetWarrantyExpirationDate": "N/A",
+  "quantity": 2,
+  "assetOwnership": "Customer Owned",
+  "location": "Room 2152 OR / Cardiac",
+  "image": "inven_81.jpg"
 }
+
 ];
+
