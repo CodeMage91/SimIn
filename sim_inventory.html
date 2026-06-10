@@ -19,6 +19,18 @@
                 <div id="start_search" type="button" style=" background-color: #222; color: white; width: 24px; height: 24px; border-radius: 12px; text-align: center; align-items: center; display: flex; flex-direction: column; justify-content: center; cursor: pointer; margin-left: 4px;">Go</div>
             </form>
         </div>
+        <div id="calendar_controls" style="width: 1200px; height: 48px; border: 1px solid black; border-bottom: none; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 0 12px; background-color: #f5f5f5;">
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 8px;">
+                <div id="prev_btn" style="background-color: #222; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 18px;" title="Previous">&larr;</div>
+                <div id="next_btn" style="background-color: #222; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 18px;" title="Next">&rarr;</div>
+                <div id="today_btn" style="background-color: #222; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;" title="Go to Today">Today</div>
+            </div>
+            <div id="calendar_header" style="font-size: 20px; font-weight: bold;">June 2026</div>
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 8px;">
+                <div id="week_view_btn" style="background-color: #222; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;" title="Week View">Week</div>
+                <div id="month_view_btn" style="background-color: #555; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;" title="Month View">Month</div>
+            </div>
+        </div>
         <div id="event_calendar" style="width: 1200px; height: 820px; border: 1px solid black; display: flex; flex-direction: column;  overflow-y: scroll;"></div>
         <div id="event_details" style="width: 1200px; height: 820px; border: 1px solid black; display: none; flex-direction: column;  overflow-y: scroll;"></div>
         <div id="results" style="width: 1200px; height: 820px; border: 1px solid black; display: none; flex-direction: column;  overflow-y: scroll;"></div>
