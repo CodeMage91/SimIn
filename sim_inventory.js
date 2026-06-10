@@ -71,7 +71,7 @@ group_results.style.display = "none";
 event_calendar.style.display = "flex";
 
 if (results) {
-    renderResults(sim_inventory);
+    renderResults(window.sim_inventory || []);
 }
 
 function renderResults(list) {
@@ -315,8 +315,9 @@ if (submit_request) {
 
 function searchInventory(query) {
     query = query.toLowerCase();
+    let inventory = window.sim_inventory || [];
 
-    let filtered = sim_inventory.filter(item =>
+    let filtered = inventory.filter(item =>
         item.productName.toLowerCase().includes(query) ||
         item.serialNumber.toLowerCase().includes(query) ||
         item.productLine.toLowerCase().includes(query) ||
@@ -484,7 +485,7 @@ async function joinGroup(groupId, group, typedPassword) {
     let alreadyJoined = members.some(member =>
         member.userName === current_user.userName
     );
-
+    
     if (alreadyJoined) {
         alert("You are already in this group.");
         return;

@@ -1,4 +1,4 @@
-let sim_inventory = [
+window.sim_inventory = [
   {
     id: 1,
     productLine: "ALS Simulator",

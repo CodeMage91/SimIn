@@ -18,7 +18,7 @@ if (loginForm) {
 function loginUser() {
     const typedName = loginInput.value.trim();
 
-    const foundUser = users.find(user =>
+    const foundUser = window.users.find(user =>
         user.userName.toLowerCase() === typedName.toLowerCase()
     );
 
