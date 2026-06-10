@@ -87,7 +87,7 @@ group_results.style.display = "none";
 event_calendar.style.display = "flex";
 
 if (results) {
-    renderResults(sim_inventory);
+    renderResults(window.sim_inventory || []);
 }
 
 function renderResults(list) {
@@ -331,8 +331,9 @@ if (submit_request) {
 
 function searchInventory(query) {
     query = query.toLowerCase();
+    let inventory = window.sim_inventory || [];
 
-    let filtered = sim_inventory.filter(item =>
+    let filtered = inventory.filter(item =>
         item.productName.toLowerCase().includes(query) ||
         item.serialNumber.toLowerCase().includes(query) ||
         item.productLine.toLowerCase().includes(query) ||
@@ -500,7 +501,7 @@ async function joinGroup(groupId, group, typedPassword) {
     let alreadyJoined = members.some(member =>
         member.userName === current_user.userName
     );
-
+    
     if (alreadyJoined) {
         alert("You are already in this group.");
         return;
@@ -526,18 +527,41 @@ async function joinGroup(groupId, group, typedPassword) {
     window.location.href = "sound_sim.html";
 }
 
-// Fetch user events from Firebase
+// Fetch user events from Firebase and merge with hard-coded events
 async function fetchUserEvents() {
+    userEvents = [];
+
+    // Add hard-coded events from sim_events (events.js) - access via window for ES modules
+    let hardcodedEvents = window.sim_events || [];
+
+    if (Array.isArray(hardcodedEvents) && hardcodedEvents.length > 0) {
+        hardcodedEvents.forEach(event => {
+            userEvents.push({
+                id: `hardcoded_${event.id}`,
+                title: event.title,
+                date: event.date,
+                start_time: event.start_time,
+                end_time: event.end_time,
+                location: event.location,
+                description: event.description,
+                lead: event.lead,
+                category: event.category,
+                notes: event.notes,
+                source: "hardcoded"
+            });
+        });
+    }
+
+    // Also fetch from Firebase
     try {
         let snapshot = await getDocs(
             query(collection(db, "user_events"), orderBy("date"))
         );
 
-        userEvents = [];
-
         snapshot.forEach(docSnap => {
             let event = docSnap.data();
             event.id = docSnap.id;
+            event.source = "firebase";
 
             // Check if event is assigned to current user or their groups
             let isAssigned = false;
@@ -554,12 +578,11 @@ async function fetchUserEvents() {
                 userEvents.push(event);
             }
         });
-
-        return userEvents;
     } catch (error) {
-        console.error("Error fetching events:", error);
-        return [];
+        console.error("Error fetching Firebase events:", error);
     }
+
+    return userEvents;
 }
 
 // Get week start date (Sunday)
@@ -691,7 +714,7 @@ function renderWeekView() {
         dayEvents.forEach(event => {
             let eventCard = document.createElement("div");
             Object.assign(eventCard.style, {
-                backgroundColor: "#4285f4",
+                backgroundColor: event.source === "hardcoded" ? "#34a853" : "#4285f4",
                 color: "white",
                 padding: "6px 8px",
                 marginBottom: "4px",
@@ -700,9 +723,12 @@ function renderWeekView() {
                 cursor: "pointer"
             });
 
+            let leadText = event.lead ? `<br><span style="font-size:10px;">Lead: ${event.lead}</span>` : "";
+
             eventCard.innerHTML = `
                 <strong>${event.title}</strong><br>
                 <span>${event.start_time || ""} - ${event.end_time || ""}</span>
+                ${leadText}
             `;
 
             eventCard.addEventListener("click", () => {
@@ -813,7 +839,7 @@ function renderMonthView() {
         dayEvents.slice(0, 3).forEach(event => {
             let eventPill = document.createElement("div");
             Object.assign(eventPill.style, {
-                backgroundColor: "#4285f4",
+                backgroundColor: event.source === "hardcoded" ? "#34a853" : "#4285f4",
                 color: "white",
                 padding: "2px 6px",
                 marginBottom: "2px",
@@ -855,6 +881,7 @@ function renderMonthView() {
 // Show event detail popup
 function showEventDetail(event) {
     event_calendar.style.display = "none";
+    if (calendar_controls) calendar_controls.style.display = "none";
     event_details.style.display = "flex";
 
     event_details.innerHTML = "";
@@ -874,6 +901,7 @@ function showEventDetail(event) {
     backBtn.addEventListener("click", () => {
         event_details.style.display = "none";
         event_calendar.style.display = "flex";
+        if (calendar_controls) calendar_controls.style.display = "flex";
     });
     event_details.appendChild(backBtn);
 
@@ -883,12 +911,19 @@ function showEventDetail(event) {
         maxWidth: "600px"
     });
 
+    let leadHTML = event.lead ? `<p><strong>Lead:</strong> ${event.lead}</p>` : "";
+    let categoryHTML = event.category ? `<p><strong>Category:</strong> ${event.category}</p>` : "";
+    let notesHTML = event.notes ? `<p><strong>Notes:</strong> <em>${event.notes}</em></p>` : "";
+
     detail.innerHTML = `
         <h2 style="margin-top:0;">${event.title}</h2>
         <p><strong>Date:</strong> ${event.date}</p>
         <p><strong>Time:</strong> ${event.start_time || "N/A"} - ${event.end_time || "N/A"}</p>
         <p><strong>Location:</strong> ${event.location || "N/A"}</p>
+        ${leadHTML}
+        ${categoryHTML}
         <p><strong>Description:</strong> ${event.description || "No description"}</p>
+        ${notesHTML}
     `;
 
     event_details.appendChild(detail);

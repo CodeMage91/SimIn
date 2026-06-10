@@ -1,4 +1,4 @@
-let sim_inventory = [
+window.sim_inventory = [
   {
     id: 1,
     productLine: "ALS Simulator",
@@ -978,4 +978,16 @@ let sim_inventory = [
     location: "Respiratory Therapy Room 2150",
     image: "inven_66.jpg",
   },
+];
+
+let sim_inventory = [
+  {
+    "id": 79,
+    "ProductLine": "Geri",
+    "ProductName": "Geri TM Nasco Generic Manikin",
+    "AccountName": "Saint Josephs University",
+    "Asset Ownership": "Customer Owned",
+    "Location": "Simulation Lab",
+    Image: "inven_79.jpg"
+  }
 ];

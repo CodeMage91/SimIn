@@ -1,5 +1,5 @@
 // events.js
-let event_title = [
+window.event_title = [
     {
         id: 0,
         title: "Future Health Leaders Summer Camp 2026",
@@ -8,7 +8,7 @@ let event_title = [
     }
 ];
 
-const sim_events = [
+window.sim_events = [
     {
         id: 1,
         event_id: 0,

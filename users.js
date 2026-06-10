@@ -1,6 +1,6 @@
 //users.js
 
-users = [
+window.users = [
     {
         id: 0,
         userName: "Admin00",
